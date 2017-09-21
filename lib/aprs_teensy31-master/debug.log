@@ -1,0 +1,18 @@
+[0827/171509:ERROR:tcp_socket_win.cc(335)] bind() returned an error: Only one usage of each socket address (protocol/network address/port) is normally permitted. (0x2740)
+[0827/171509:ERROR:devtools_http_handler.cc(229)] Cannot start http server for devtools. Stop devtools.
+[0827/171512:ERROR:cache_util_win.cc(20)] Unable to move the cache: 5
+[0827/171512:ERROR:cache_util.cc(134)] Unable to move cache folder C:\ProgramData\Altium\Altium Designer {A5012920-343C-4C46-A07C-9F8F71219C49}\BrowserCache\GPUCache to C:\ProgramData\Altium\Altium Designer {A5012920-343C-4C46-A07C-9F8F71219C49}\BrowserCache\old_GPUCache_000
+[0827/171512:ERROR:cache_creator.cc(129)] Unable to create cache
+[0827/171512:ERROR:shader_disk_cache.cc(589)] Shader Cache Creation failed: -2
+[0827/171512:ERROR:cache_util_win.cc(20)] Unable to move the cache: 5
+[0827/171512:ERROR:cache_util.cc(134)] Unable to move cache folder C:\ProgramData\Altium\Altium Designer {A5012920-343C-4C46-A07C-9F8F71219C49}\BrowserCache to C:\ProgramData\Altium\Altium Designer {A5012920-343C-4C46-A07C-9F8F71219C49}\old_BrowserCache_000
+[0827/171512:ERROR:cache_creator.cc(129)] Unable to create cache
+[0827/173101:ERROR:tcp_socket_win.cc(335)] bind() returned an error: Only one usage of each socket address (protocol/network address/port) is normally permitted. (0x2740)
+[0827/173101:ERROR:devtools_http_handler.cc(229)] Cannot start http server for devtools. Stop devtools.
+[0827/173104:ERROR:cache_util_win.cc(20)] Unable to move the cache: 5
+[0827/173104:ERROR:cache_util.cc(134)] Unable to move cache folder C:\ProgramData\Altium\Altium Designer {A5012920-343C-4C46-A07C-9F8F71219C49}\BrowserCache\GPUCache to C:\ProgramData\Altium\Altium Designer {A5012920-343C-4C46-A07C-9F8F71219C49}\BrowserCache\old_GPUCache_000
+[0827/173104:ERROR:cache_creator.cc(129)] Unable to create cache
+[0827/173104:ERROR:shader_disk_cache.cc(589)] Shader Cache Creation failed: -2
+[0827/173104:ERROR:cache_util_win.cc(20)] Unable to move the cache: 5
+[0827/173104:ERROR:cache_util.cc(134)] Unable to move cache folder C:\ProgramData\Altium\Altium Designer {A5012920-343C-4C46-A07C-9F8F71219C49}\BrowserCache to C:\ProgramData\Altium\Altium Designer {A5012920-343C-4C46-A07C-9F8F71219C49}\old_BrowserCache_000
+[0827/173104:ERROR:cache_creator.cc(129)] Unable to create cache
