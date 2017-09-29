@@ -181,6 +181,7 @@ void parse_radio_config(vb_rf_config* config) {
     break;
   case CALLSIGN_DIVIDER:
     configCallsignDivider = config->data[0];
+    if (configCallsignDivider == 0) configCallsignDivider = 100;
   }
 }
 
@@ -314,6 +315,9 @@ int main() {
   int nAddresses = 0;
   int msgNum = 0;
 
+  sendRadioTimer = millis() + 3000;
+  sendAPRSTimer = sendRadioTimer + 60*1000;
+
   while (true) {
         uint32_t st = micros();
     switch (currentState) {
@@ -371,7 +375,7 @@ int main() {
 
       Serial.println("set up");
 
-      rf24.setTxPower(0x4f);
+      rf24.setTxPower(0x7f);
       nextState = DO_THE_THINGS;
       break;
 
@@ -445,6 +449,7 @@ int main() {
       break;
 
     case TRANSMIT_SSTV:
+      amBusy();
       Serial.println("Transmitting SSTV");
       DorjiPTTOn(); // enable push to talk
       delay(1000);
@@ -458,6 +463,7 @@ int main() {
       break;
 
     case APRS_CHARGING:
+      amBusy();
       SupercapChargerOn(); // Turn on sprcap charger
       while(superCapVoltage() <= 5.0) {
         delay(1000);
@@ -470,6 +476,7 @@ int main() {
       break;
 
     case APRS_CONFIG:
+      amBusy();
       Serial.println("Configuring Dorji for APRS transmit");
       nAddresses = 4;
       addresses[2].callsign = "WIDE1";
@@ -496,6 +503,7 @@ int main() {
       break;
 
     case TRANSMIT_APRS:
+      amBusy();
       for (int i = 0; i < 5; i++) {
         aprs_send(addresses, nAddresses
                 , 27, 5, 50
