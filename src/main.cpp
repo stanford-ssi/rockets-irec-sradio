@@ -18,7 +18,7 @@
  09/20/2017 Flight-ish code
 
  TODO as of 09/20/2017:
- More testing.
+ Logging. More testing.
 */
 
 #include <Arduino.h>
@@ -31,12 +31,10 @@
 #include <aprs.h>
 #include "RadioInterface.h"
 
-
-const int MESSAGE_LENGTH = 35;
-#define NPAR 25
+const int MESSAGE_LENGTH = 50;
+#define NPAR 40
 
 #include "ecc.h"
-
 
 #define   PAYLOAD_1          4
 #define   SCAP_PG            27
@@ -64,12 +62,19 @@ const int MESSAGE_LENGTH = 35;
 #define   UART_DORJI         Serial1
 #define   UART_MAINBOARD     Serial2
 
+File                     logfile;                    // SD Card Logfile
+AudioPlaySdWav           playWav1;                   // SSTV Audio File
+AudioOutputAnalog        audioOutput;
+AudioConnection          patchCord1(playWav1, 0, audioOutput, 0);
+AudioConnection          patchCord2(playWav1, 1, audioOutput, 1);
+AudioControlSGTL5000     sgtl5000_1;
+
 // Constants and Tuneable Variables
 const int     DORJI_BAUD =             9600;
 const int     DRA818V_PTT_DELAY =      150;             // Milliseconds to wait after PTT to transmit
 const int     DRA818V_COMMAND_DELAY =  250;             // Milliseconds to wait after sending a UART command
 const int     DORJI_WAKEUP_INT =       5000;            // Milliseconds to wake dorji up
-#define       S_CALLSIGN               "KK6MIR"         // FCC Callsign
+#define       S_CALLSIGN               "KK6MIS"         // FCC Callsign
 #define       S_CALLSIGN_ID            1                // 11 is usually for balloons
 #define       D_CALLSIGN               "APRS"           // Destination callsign: APRS (with SSID=0) is usually okay.
 #define       D_CALLSIGN_ID            0                // Desination ID
@@ -86,152 +91,98 @@ struct PathAddress addresses[] = {
 RH_RF24                  rf24(GFSK_CS, GFSK_IRQ, GFSK_SDN);
 
 typedef enum {
-        WAIT_FOR_COMMAND,
+        DO_THE_THINGS,
         GFSK_CONFIG,
-        TRANSMIT_GFSK
+        TRANSMIT_GFSK,
+        SSTV_CHARGING,
+        SSTV_CONFIG,
+        TRANSMIT_SSTV,
+        APRS_CONFIG,
+        APRS_CHARGING,
+        TRANSMIT_APRS
 } states;
 
 states        currentState = GFSK_CONFIG;
 states        previousState;
 states        nextState;
 
-
 const int AUTOMATIC = 1;
 const int MANUAL = 2;
 
 int RADIO_MODE = AUTOMATIC;
 
-
 vb_rf_message message;
-
-
 bool parsing = true;
 uint8_t parse_pos = 0;
-
 uint8_t last_bytes[4] = {0};
+uint8_t frame_size;
+uint8_t latest_frame[256];
 
+const char* callsign_message = "This is ValBal, callsign KK6MIS, a Stanford balloon payload, visit habmc.stanfordssi.org. ";
 
+float yeLatitude = 0.0;
+float yeLongitude = 0.0;
 
-void highBoostPower(){
-    Wire.beginTransmission(0x2E);
-    Wire.write(byte(0x10));
-    Wire.endTransmission();
-}
+float goodLatitude = 37.427501;
+float goodLongitude = -122.170269;
 
-/*************************************************************************************************************************************************************************************************/
+#include "BoardUtils.h"
 
-void lowBoostPower(){
-    Wire.beginTransmission(0x2E);
-    Wire.write(byte(0x7F));
-    Wire.endTransmission();
-}
+double configFrequency = 433.5;
+float configAPRSInterval = 10*60*1000;
+int configConfig = 5;
+int configCallsignDivider = 100;
 
-/*************************************************************************************************************************************************************************************************/
-
-void SupercapChargerOff(){
-  digitalWrite(BOOST_EN, LOW);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void SupercapChargerOn(){
-  digitalWrite(BOOST_EN, HIGH);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void FiveVOff(){
-  digitalWrite(EN_5V, LOW);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void FiveVOn(){
-  digitalWrite(EN_5V, HIGH);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void DorjiOn(){
-  digitalWrite(DORJI_GATE, LOW);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void DorjiOff(){
-  digitalWrite(DORJI_GATE, HIGH);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void DorjiSleep(){
-  digitalWrite(DORJI_SLP, LOW);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void DorjiWake(){
-  digitalWrite(DORJI_SLP, HIGH);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void DorjiLowPower(){
-  digitalWrite(DORJI_PSEL, LOW);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void DorjiHighPower(){
-  digitalWrite(DORJI_PSEL, HIGH);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void DorjiPTTOn(){
-  digitalWrite(DORJI_PTT, LOW);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void DorjiPTTOff(){
-  digitalWrite(DORJI_PTT, HIGH);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void GFSKOff(){
-  digitalWrite(GFSK_GATE, HIGH);
-}
-
-/*************************************************************************************************************************************************************************************************/
-
-void GFSKOn(){
-  digitalWrite(GFSK_GATE, LOW);
-}
-
-
-
+int sendRadioTimer = millis() + 3000;
+int sendAPRSTimer = sendRadioTimer + 60*1000;
 
 void parse_radio_config(vb_rf_config* config) {
   switch (config->config) {
   case VB_FREQUENCY:
     Serial.print("   - Setting ValBal frequency to ");
+    configFrequency = config->data[0] + ((float) config->data[1])/65536.;
+    Serial.println(configFrequency);
+    nextState = GFSK_CONFIG;
+    break;
+  case BEC_INTERVAL:
+    Serial.print("   - Setting BEC interval to ");
     Serial.println(config->data[0]);
     break;
-  case BEC_DIVIDER:
-    Serial.print("   - Setting BEC divider to ");
+  case APRS_INTERVAL:
+    Serial.print("   - Setting APRS interval to ");
     Serial.println(config->data[0]);
+    Serial.println("minutes");
+    configAPRSInterval = config->data[0] * 60000;
+    sendAPRSTimer = millis() + configAPRSInterval;
     break;
-  case APRS_DIVIDER:
-    Serial.print("   - Setting APRS divider to ");
+  case VB_DATARATE:
+    Serial.print("   - Setting datarate to ");
     Serial.println(config->data[0]);
+    configConfig = config->data[0];
+    if (configConfig > 10 || configConfig < 1) configConfig = 5;
+    nextState = GFSK_CONFIG;
     break;
+  case RF_MODE:
+    Serial.print("   - Setting RF mode to ");
+    Serial.println(config->data[0]);
+    if (config->data[0] == 1776) {
+      RADIO_MODE = AUTOMATIC;
+      nextState = GFSK_CONFIG;
+      sendRadioTimer = millis() + 6000;
+      sendAPRSTimer = sendRadioTimer + configAPRSInterval;
+    } else {
+      RADIO_MODE = MANUAL;
+      GFSKOff();
+    }
+    break;
+  case APRS_NOW:
+    Serial.println("   - Sending APRS now whaddup ");
+    nextState = APRS_CONFIG;
+    break;
+  case CALLSIGN_DIVIDER:
+    configCallsignDivider = config->data[0];
   }
 }
-
-uint8_t frame_size;
-uint8_t latest_frame[256];
 
 void parse_radio_command() {
   //Serial.println("Parsing radio command.");
@@ -253,10 +204,19 @@ void parse_radio_command() {
     break;
 
   case DATA_FRAME:
-    Serial.print(" > Getting data frame. ");
+    Serial.print(" >");
     int sz = message.data[0];
-    Serial.println(sz);
-    memcpy(latest_frame, message.data+1, sz);
+    yeLatitude = *(float*)(message.data+1);
+    yeLongitude = *(float*)(message.data+5);
+    if (fabs(yeLatitude) > 0.01 && fabs(yeLongitude) > 0.01) {
+      goodLatitude = yeLatitude;
+      goodLongitude = yeLongitude;
+    }
+    Serial.print("Got ");
+    Serial.print(yeLatitude);
+    Serial.print(" ");
+    Serial.println(yeLongitude);
+    memcpy(latest_frame, message.data+9, sz);
     frame_size = sz;
     break;
   }
@@ -292,6 +252,14 @@ void receive_byte() {
   }
 }
 
+void playFile(const char *filenamew) {
+  Serial.print("Playing SSTV file: ");
+  Serial.println(filenamew);
+  Serial.println(playWav1.play(filenamew));
+  delay(5);
+  while (playWav1.isPlaying()) {
+  }
+}
 
 int main() {
   pinMode(BOOST_EN, OUTPUT);
@@ -302,6 +270,7 @@ int main() {
   pinMode(DORJI_PTT, OUTPUT);
   pinMode(DORJI_PSEL, OUTPUT);
   pinMode(GFSK_SDN,OUTPUT);
+  amBusy();
   SupercapChargerOff();
   FiveVOff();
   DorjiOff();
@@ -309,9 +278,9 @@ int main() {
   DorjiSleep();
   DorjiPTTOff();
   DorjiLowPower();
-  Wire.begin();//I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, I2C_RATE_400);
-  //lowBoostPower();
-  highBoostPower();
+  Wire.begin();//I2C_MASsTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, I2C_RATE_400);
+  lowBoostPower();
+  //highBoostPower();
   SPI.setSCK(13);       // SCK on pin 13
   SPI.setMOSI(11);      // MOSI on pin 11
   SPI.setMISO(12);      // MOSI on pin 11
@@ -330,29 +299,48 @@ int main() {
     500, // ms to wait after PTT to transmit
     0, 0 // No VOX ton
   );
-  delay(3000);
-  Serial2.begin(VBRF_BAUD_RATE);
 
-  Serial.println("sending gpio2 output");
+  pinMode(PAYLOAD_1, OUTPUT);
   pinMode(PAYLOAD_4, OUTPUT);
-
-  int sendRadioTimer = millis() + 6000;
 
   initialize_ecc();
 
+  delay(3000);
+  Serial2.begin(VBRF_BAUD_RATE);
+
+
+  uint8_t data[256] = {0};
+  uint8_t leng = MESSAGE_LENGTH + NPAR;
+  int nAddresses = 0;
+  int msgNum = 0;
+
   while (true) {
+        uint32_t st = micros();
     switch (currentState) {
-    case WAIT_FOR_COMMAND:
-      if (RADIO_MODE == AUTOMATIC) {
-        receive_byte();
+    case DO_THE_THINGS:
+      if (RADIO_MODE == MANUAL || (RADIO_MODE == AUTOMATIC)) amFree();
+      else amBusy();
+      receive_byte();
+      if (nextState != DO_THE_THINGS) {
+        parsing = false;
+        parse_pos = 0;
+        break;
       }
-      if (millis() > sendRadioTimer) {
-        nextState = TRANSMIT_GFSK;
+      if (RADIO_MODE == AUTOMATIC) {
+        if (millis() > sendAPRSTimer) {
+          nextState = APRS_CHARGING;
+        } else if (millis() > sendRadioTimer) {
+          nextState = TRANSMIT_GFSK;
+        }
       } else {
-        nextState = WAIT_FOR_COMMAND;
+        nextState = DO_THE_THINGS;
       }
       break;
+
     case GFSK_CONFIG:
+      amBusy();
+      GFSKOff();
+      delay(500);
       GFSKOn();
       rf24.init(MESSAGE_LENGTH+NPAR);
       uint8_t buf[8];
@@ -361,41 +349,170 @@ int main() {
       } else {
         Serial.println("SPI OK");
       }
-      if (!rf24.setFrequency(433.5)) {
+      if (!rf24.setFrequency(configFrequency)) {
         Serial.println("setFrequency failed");
       } else {
-        Serial.println("Frequency set to 433.5 MHz");
+        Serial.print("Frequency set to ");
+        Serial.print(configFrequency);
+        Serial.println(" MHz.");
       }
-      rf24.setModemConfig(rf24.GFSK_Rb0_5Fd1);   // GFSK 500 bps
-      rf24.setTxPower(0x4f);
-      nextState = WAIT_FOR_COMMAND;
-      break;
-    case TRANSMIT_GFSK:
-      uint8_t data[256] = {0};
-      uint8_t leng = MESSAGE_LENGTH + NPAR;
+      //rf24.setModemConfig(rf24.GFSK_Rb0_5Fd1);   // GFSK 500 bps
 
-      if (frame_size >= MESSAGE_LENGTH) {
+      if (configConfig == 1) rf24.setModemConfig(rf24.FSK_Rb0_5Fd1);    // FSK  500 bps
+      if (configConfig == 2) rf24.setModemConfig(rf24.FSK_Rb5Fd10);     // FSK  5   kbps
+      if (configConfig == 3) rf24.setModemConfig(rf24.FSK_Rb50Fd100);   // FSK  50  kbps
+      if (configConfig == 4) rf24.setModemConfig(rf24.FSK_Rb150Fd300);  // FSK  150 kbps
+      if (configConfig == 5) rf24.setModemConfig(rf24.GFSK_Rb0_5Fd1);   // GFSK 500 bps
+      if (configConfig == 6) rf24.setModemConfig(rf24.GFSK_Rb5Fd10);    // GFSK 5   kbps
+      if (configConfig == 7) rf24.setModemConfig(rf24.GFSK_Rb50Fd100);  // GFSK 50  kbps
+      if (configConfig == 8) rf24.setModemConfig(rf24.GFSK_Rb150Fd300); // GFSK 150 kbps
+      if (configConfig == 9) rf24.setModemConfig(rf24.OOK_Rb5Bw30);     // OOK  5   kbps
+      if (configConfig == 10) rf24.setModemConfig(rf24.OOK_Rb10Bw40);   // OOK  10  kbps
+
+      Serial.println("set up");
+
+      rf24.setTxPower(0x4f);
+      nextState = DO_THE_THINGS;
+      break;
+
+    case TRANSMIT_GFSK:
+      amBusy();
+
+      if (frame_size > MESSAGE_LENGTH) {
         Serial.println("WELL CRAP");
       }
 
-      encode_data(latest_frame, frame_size, data);
-      Serial.println("encoded data");
-      for (int i=0; i<frame_size+NPAR; i++) {
-        int k = data[i];
-        Serial.print(k);
-        if (k < 10) Serial.print(" ");
-        if (k < 100) Serial.print(" ");
-        Serial.print(" ");
+      if ((msgNum % configCallsignDivider == 10)) {
+        memcpy(data, callsign_message, 90);
+      } else {
+        encode_data(latest_frame, frame_size, data);
+        Serial.println("encoded data");
+        for (int i=0; i<frame_size+NPAR; i++) {
+          int k = data[i];
+          Serial.print(k);
+          if (k < 10) Serial.print(" ");
+          if (k < 100) Serial.print(" ");
+          Serial.print(" ");
+        }
+        Serial.println();
       }
-      Serial.println();
+      msgNum++;
 
       rf24.send(data, MESSAGE_LENGTH + NPAR);
       rf24.waitPacketSent();
 
+      Serial.print((micros()-st)/1000.);
+      Serial.println(" ms");
 
-      sendRadioTimer = millis() + 1500;
+      sendRadioTimer = millis() + 2000;
 
-      nextState = WAIT_FOR_COMMAND;
+      nextState = DO_THE_THINGS;
+      break;
+
+    case SSTV_CHARGING:
+      amBusy();
+      SupercapChargerOn(); // Turn on sprcap charger
+      while(superCapVoltage() <= 5.0) {
+        delay(1000);
+        Serial.println("Waiting for supercap to charge.  It is currently at: ");
+        Serial.print(superCapVoltage()); Serial.println(" volts.");
+      }
+      FiveVOn();  // Turn on 5V line
+      delay(500);
+      nextState = SSTV_CONFIG;
+      break;
+
+    case SSTV_CONFIG:
+      amBusy();
+      Serial.println("Configuring Dorji for SSTV transmit");
+      DorjiOn();
+      delay(1000);
+      DorjiSleep();
+      delay(1000);
+      DorjiWake();
+      delay(5000);
+      DorjiLowPower();
+      delay(1000);
+      UART_DORJI.print("AT+DMOCONNECT\r\n"); //handshake command
+      delay(1000);
+      UART_DORJI.print("AT+DMOSETGROUP=1,144.5000,144.5000,0000,4,0000\r\n"); //set tx and rx frequencies
+      delay(1000);
+      DorjiSleep();
+      delay(3000);
+      DorjiWake();
+      delay(5000);
+      nextState = TRANSMIT_SSTV;
+      break;
+
+    case TRANSMIT_SSTV:
+      Serial.println("Transmitting SSTV");
+      DorjiPTTOn(); // enable push to talk
+      delay(1000);
+      playFile("SSTVV.WAV");
+      DorjiPTTOff(); // disable push to talk
+      DorjiSleep(); //sleep sweet dorji <3
+      delay(1000);
+      DorjiOff();
+      FiveVOff();
+      nextState = DO_THE_THINGS;
+      break;
+
+    case APRS_CHARGING:
+      SupercapChargerOn(); // Turn on sprcap charger
+      while(superCapVoltage() <= 5.0) {
+        delay(1000);
+        Serial.println("Waiting for supercap to charge.  It is currently at: ");
+        Serial.print(superCapVoltage()); Serial.println(" volts.");
+      }
+      FiveVOn();  // Turn on 5V line
+      delay(500);
+      nextState = APRS_CONFIG;
+      break;
+
+    case APRS_CONFIG:
+      Serial.println("Configuring Dorji for APRS transmit");
+      nAddresses = 4;
+      addresses[2].callsign = "WIDE1";
+      addresses[2].ssid = 1;
+      addresses[3].callsign = "WIDE2";
+      addresses[3].ssid = 2;
+      DorjiOn();
+      delay(1000);
+      DorjiSleep();
+      delay(1000);
+      DorjiWake();
+      delay(5000);
+      DorjiHighPower();
+      delay(1000);
+      UART_DORJI.print("AT+DMOCONNECT\r\n"); //handshake command
+      delay(1000);
+      UART_DORJI.print("AT+DMOSETGROUP=1,144.3900,144.3900,0000,4,0000\r\n"); //set tx and rx frequencies
+      delay(1000);
+      DorjiSleep();
+      delay(3000);
+      DorjiWake();
+      delay(5000);
+      nextState = TRANSMIT_APRS;
+      break;
+
+    case TRANSMIT_APRS:
+      for (int i = 0; i < 5; i++) {
+        aprs_send(addresses, nAddresses
+                , 27, 5, 50
+                , goodLatitude, goodLongitude // degrees
+                , 0 // meters
+                , 0
+                , 0
+                , SYMBOL_TABLE
+                , SYMBOL_CHAR
+                , "VB EE Radio v8.1");
+        delay(1000);
+      }
+      DorjiOff();
+      FiveVOff();
+      SupercapChargerOff();
+      sendAPRSTimer = millis() + configAPRSInterval;
+      nextState = DO_THE_THINGS;
       break;
     }
     previousState = currentState;

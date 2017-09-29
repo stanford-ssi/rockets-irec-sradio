@@ -12,10 +12,12 @@ typedef uint8_t RadioCommand;
 
 enum RadioConfigEnum {
   VB_FREQUENCY,
-  BEC_DIVIDER,
-  APRS_DIVIDER,
+  BEC_INTERVAL,
+  APRS_INTERVAL,
   CALLSIGN_DIVIDER,
-  VB_DATARATE
+  VB_DATARATE,
+  RF_MODE,
+  APRS_NOW
 };
 typedef uint8_t RadioConfig;
 
