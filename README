@@ -1,7 +1,21 @@
-By Joan Creus-Costa and Aria Tedjarati.
+Project: SRADio Test Code
+Created: 12/29/2017 12:33:25 PM
+Authors: Tim Vrakas
+         Joan Creus-Costa
+         Aria Tedjarati
 
+Description:
+GFSK (2-way) radio communication with custom SRADio Hardware.
 Using RadioHead radio library and Henry Minksy's RSCODE library.
 
-ValBal transmitter board code.
+Credits:
+Femtoloon and Iskender Kushan's SSTV code.
+Aria Tedjarati and Joan Creus-Costa for VBRF
 
-Missing: SSTV/APRS & final testing.
+Status:
+12/29/2017 Rewrite Library
+
+TODO as of 12/29/2017:
+  -Add RX code
+  -Test With new Hardware
+  -Build packet parser
