@@ -14,7 +14,8 @@ public:
   SRADio();
   void configureRF();
   void encode_and_transmit(uint8_t *latest_frame, uint8_t frame_size);
-  int tryToRX(uint8_t *message);
+  uint8_t tryToRX(uint8_t *message);
+  uint8_t getRSSI();
 
 private:
   void RadioOff();

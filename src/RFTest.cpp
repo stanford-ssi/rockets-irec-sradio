@@ -15,7 +15,6 @@
  12/29/2017 Rewrite Library
 
  TODO as of 12/29/2017:
- -Add RX code
  -Test With new Hardware
  -Build packet parser
 */
@@ -23,8 +22,10 @@
 #include <Arduino.h>
 #include "SRADio.h"
 
-uint8_t message_length = MAX_MSG_LENGTH;
-uint8_t latest_message[MAX_MSG_LENGTH] = {0};
+uint8_t tx_message_length = MAX_MSG_LENGTH;
+uint8_t tx_message[MAX_MSG_LENGTH] = {0};
+
+uint8_t rx_message[MAX_MSG_LENGTH] = {0};
 
 SRADio SRADio1;
 
@@ -43,14 +44,22 @@ int main()
 
   while (true)
   {
-    //look for new data here.
+
+    if(SRADio1.tryToRX(rx_message) == 1){
+      Serial.print("Got Frame: ");
+      Serial.write(rx_message, MAX_MSG_LENGTH);
+      Serial.println();
+      Serial.printf("RSSI: %u", SRADio1.getRSSI());
+    }
+
+
     if (millis() > sendRadioTimer)
     {
       //generate some data paterns!
       i = (i + 1) % MAX_MSG_LENGTH;
-      latest_message[i]++;
+      tx_message[i]++;
 
-      SRADio1.encode_and_transmit(latest_message, message_length);
+      SRADio1.encode_and_transmit(tx_message, tx_message_length);
       sendRadioTimer = millis() + 1000;
     }
   }

@@ -131,16 +131,20 @@ void SRADio::RadioOn()
   digitalWrite(GFSK_GATE, LOW);
 }
 
-int SRADio::tryToRX(uint8_t *message)
+//tryToRX:
+//attempts to process any recived messages
+uint8_t SRADio::tryToRX(uint8_t *message)
 {
   uint8_t data[FRAME_SIZE + 32] = {0}; //32 bytes buffer room
   uint8_t data_size = FRAME_SIZE;
+  bool receivedMsg = false;
   bool frameError = false;
   bool eccError = false;
   bool eccUsed = false;
 
   if (rf24->recv(data, &data_size))
   {
+    receivedMsg = true;
     lastRssi = (uint8_t)rf24->lastRssi();
 
 #ifdef PRINT_RSSI
@@ -190,6 +194,12 @@ int SRADio::tryToRX(uint8_t *message)
     }
     memcpy(message, copied, MAX_MSG_LENGTH);
     
-    return (eccUsed)+(2*eccError)+(4*frameError);
+    return (receivedMsg)+(2*eccUsed)+(4*eccError)+(8*frameError);
   }
+}
+
+//getRSSI:
+//returns the last RSSI data
+uint8_t SRADio::getRSSI(){
+  return lastRssi;
 }
