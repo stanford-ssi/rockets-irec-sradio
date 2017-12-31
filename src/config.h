@@ -3,6 +3,8 @@
 
 #define PRINT_ENCODED_DATA
 #define PRINT_TIMING
+#define PRINT_RSSI
+#define PRINT_DEBUG
 
 #define MAX_MSG_LENGTH 50
 #define NPAR 40
@@ -20,7 +22,7 @@
 #define GFSK_MOSI 11
 #define GFSK_MISO 12
 
-#define RF_FREQ 433.0
+#define RF_FREQ 433.5
 #define RF_MODE RH_RF24::GFSK_Rb0_5Fd1
 
 // FSK_Rb0_5Fd1   // FSK  500 bps

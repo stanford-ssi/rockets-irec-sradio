@@ -14,10 +14,12 @@ public:
   SRADio();
   void configureRF();
   void encode_and_transmit(uint8_t *latest_frame, uint8_t frame_size);
+  int tryToRX(uint8_t *message);
 
 private:
   void RadioOff();
   void RadioOn();
   void configurePins();
   RH_RF24 *rf24; //the RadioHead Driver Object
+  uint8_t lastRssi; //RSSI of last reception
 };

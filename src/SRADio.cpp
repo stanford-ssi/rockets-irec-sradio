@@ -44,7 +44,6 @@ void SRADio::configureRF()
   rf24->setTxPower(0x7f);
 }
 
-
 //encode_and_transmit:
 //Performs ECC encoding, packages a frame, and transmits.
 //takes:
@@ -102,7 +101,7 @@ void SRADio::encode_and_transmit(uint8_t *msg_data, uint8_t msg_size)
 
 //configurePins:
 //Configures the pins needed for the radio.
-//The SPI configuration might not be needed, as RadioHead seems to already do it. 
+//The SPI configuration might not be needed, as RadioHead seems to already do it.
 void SRADio::configurePins()
 {
   pinMode(GFSK_GATE, OUTPUT);
@@ -130,4 +129,67 @@ void SRADio::RadioOff()
 void SRADio::RadioOn()
 {
   digitalWrite(GFSK_GATE, LOW);
+}
+
+int SRADio::tryToRX(uint8_t *message)
+{
+  uint8_t data[FRAME_SIZE + 32] = {0}; //32 bytes buffer room
+  uint8_t data_size = FRAME_SIZE;
+  bool frameError = false;
+  bool eccError = false;
+  bool eccUsed = false;
+
+  if (rf24->recv(data, &data_size))
+  {
+    lastRssi = (uint8_t)rf24->lastRssi();
+
+#ifdef PRINT_RSSI
+    Serial.print("Got stuff at RSSI: ");
+    Serial.println(lastRssi);
+#endif
+
+#ifdef PRINT_DEBUG
+    if (data_size != FRAME_SIZE)
+    {
+      Serial.print("Error, got frame of size ");
+      Serial.print(data_size);
+      Serial.print(", expecting ");
+      Serial.println(FRAME_SIZE);
+      frameError = true;
+    }
+#endif
+
+#ifdef PRINT_ENCODED_DATA
+    for (int kk = 0; kk < data_size; kk++)
+      Serial.print((char)data[kk]);
+    Serial.println();
+#endif
+
+    unsigned char copied[FRAME_SIZE];
+    memcpy(copied, data, FRAME_SIZE);
+    decode_data(copied, data_size);
+
+    if (check_syndrome() != 0)
+    {
+      eccUsed = true;
+      Serial.println("There were errors");
+      int correct = correct_errors_erasures(copied, FRAME_SIZE, 0, NULL);
+      if (correct)
+      {
+        Serial.println("Corrected successfully.");
+      }
+      else
+      {
+        Serial.println("Uncorrectable Errors!");
+        eccError = true;
+      }
+    }
+    else
+    {
+      Serial.println("No errors");
+    }
+    memcpy(message, copied, MAX_MSG_LENGTH);
+    
+    return (eccUsed)+(2*eccError)+(4*frameError);
+  }
 }
