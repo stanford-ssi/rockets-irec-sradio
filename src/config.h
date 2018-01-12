@@ -13,11 +13,11 @@
 #define GFSK_SDN 6
 #define GFSK_IRQ 2
 #define GFSK_GATE 5
-#define GFSK_GPIO_0 21
-#define GFSK_GPIO_1 20
-#define GFSK_GPIO_2 7
-#define GFSK_GPIO_3 8
-#define GFSK_CS 25
+#define GFSK_GPIO_0 7
+#define GFSK_GPIO_1 8
+#define GFSK_GPIO_2 20
+#define GFSK_GPIO_3 21
+#define GFSK_CS 22
 #define GFSK_SCK 13
 #define GFSK_MOSI 11
 #define GFSK_MISO 12
