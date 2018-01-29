@@ -21,6 +21,8 @@
 
 #include <Arduino.h>
 #include "SRADio.h"
+#include "hermes.h"
+#include "hermes_irec.h"
 
 uint8_t tx_message_length = MAX_MSG_LENGTH;
 uint8_t tx_message[MAX_MSG_LENGTH] = {0};
@@ -31,6 +33,12 @@ SRADio SRADio1;
 
 int main()
 {
+
+  Hermes skybass_interface(Serial1);
+
+  skybass_data_t data;
+  data.latitude = 5.0;
+  skybass_interface.send(data);
 
   Serial.begin(115200);
   Serial.println("SRADio Jan 2018");
@@ -50,10 +58,22 @@ int main()
       Serial.write(rx_message, MAX_MSG_LENGTH);
       Serial.println();
       Serial.printf("RSSI: %u", SRADio1.getRSSI());
+      Serial.println("encoded data");
+  for (int i = 0; i < MAX_MSG_LENGTH; i++)
+  {
+    uint8_t k = rx_message[i];
+    Serial.print(k);
+    if (k < 10)
+      Serial.print(" ");
+    if (k < 100)
+      Serial.print(" ");
+    Serial.print(" ");
+  }
+  Serial.println();
     }
 
 
-    if (millis() > sendRadioTimer)
+    /* if (millis() > sendRadioTimer)
     {
       //generate some data paterns!
       i = (i + 1) % MAX_MSG_LENGTH;
@@ -61,6 +81,7 @@ int main()
 
       SRADio1.encode_and_transmit(tx_message, tx_message_length);
       sendRadioTimer = millis() + 1000;
-    }
+    } */
   }
 }
+
