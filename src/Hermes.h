@@ -5,24 +5,25 @@
 //This file, which is shared between Skybass and SRADIO, defines the protocol by which data is transmitted between them.
 //its called hermes?
 
-typedef struct __attribute__((__packed__)) hermes_data_t {
-  
+typedef struct __attribute__((__packed__)) hermes_data_t
+{
+  virtual size_t getSize();
 } hermes_data_t;
 
-/* Generated with a fair dice. */
-//uint8_t RADIO_START_SEQUENCE[] = {204, 105, 119, 82};
-//uint8_t RADIO_END_SEQUENCE[] = {162, 98, 128, 161};
+typedef uint8_t packet_type_t;
 
-class Hermes{
-  public:
-    Hermes(HardwareSerial serial);
-    void send(hermes_data_t &data_struct);
-    void receive(hermes_data_t &data_struct);
-  private:  
-    HardwareSerial serialPort;
-    const uint32_t baud = 115200;
+class Hermes
+{
+public:
+  Hermes(HardwareSerial serial);
+  bool receiveSkybassData(hermes_data_t &data_struct);
+  void sendSkybassData(hermes_data_t &data_struct);
+
+private:
+  void send(hermes_data_t &data_struct);
+  void parse(hermes_data_t &data_struct);
+  HardwareSerial serialPort;
+  const uint32_t baud = 115200;
 };
 
 #endif
-
-

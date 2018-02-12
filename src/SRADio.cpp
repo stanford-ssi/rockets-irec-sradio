@@ -193,13 +193,14 @@ uint8_t SRADio::tryToRX(uint8_t *message)
       Serial.println("No errors");
     }
     memcpy(message, copied, MAX_MSG_LENGTH);
-    
-    return (receivedMsg)+(2*eccUsed)+(4*eccError)+(8*frameError);
+
+    return (receivedMsg) + (2 * eccUsed) + (4 * eccError) + (8 * frameError);
   }
 }
 
 //getRSSI:
 //returns the last RSSI data
-uint8_t SRADio::getRSSI(){
+uint8_t SRADio::getRSSI()
+{
   return lastRssi;
 }

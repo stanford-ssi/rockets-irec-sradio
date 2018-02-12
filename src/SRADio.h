@@ -21,6 +21,6 @@ private:
   void RadioOff();
   void RadioOn();
   void configurePins();
-  RH_RF24 *rf24; //the RadioHead Driver Object
+  RH_RF24 *rf24;    //the RadioHead Driver Object
   uint8_t lastRssi; //RSSI of last reception
 };
