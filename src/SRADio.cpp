@@ -193,6 +193,7 @@ uint8_t SRADio::tryToRX(uint8_t *message)
 
     return (receivedMsg) + (2 * eccUsed) + (4 * eccError) + (8 * frameError);
   }
+  return 0;
 }
 
 //getRSSI:

@@ -34,7 +34,7 @@ uint32_t compressFloat(double_t value, double_t min, double_t max, uint8_t bits)
 
 uint32_t trimBits(uint32_t value, uint8_t bits)
 {
-    uint32_t max = 2 ^ bits - 1;
+    uint32_t max = (2 ^ bits) - 1;
     //mod to the input bounds provided
     value = value % max;
     //constrain to bit range and reduce to int
