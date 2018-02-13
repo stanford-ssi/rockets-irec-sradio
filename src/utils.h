@@ -17,18 +17,19 @@ typedef struct __attribute__((__packed__)) radio_packet_t
 } radio_packet_t;
 
 uint32_t compressFloat(double_t value, double_t min, double_t max, uint8_t bits)
-{
+{   
+    uint32_t range = (2 ^ bits) - 1;
     //mod to the input bounds provided
     while (value > max)
         value = value - max + min;
     while (value < min)
         value = value + max - min;
     //map to whole number increments
-    value = map(value, min, max, 0.0, ((double)(2 ^ bits) - 1));
+    value = map(value, min, max, 0.0, (double)range);
     //constrain to bit range and reduce to int
-    uint32_t quantized = constrain((uint32_t)value, 0, (2 ^ bits) - 1);
+    uint32_t quantized = constrain((uint32_t)value, 0, range);
     //mask to the bit range
-    quantized = quantized & ((uint32_t)(2 ^ bits) - 1);
+    quantized = quantized & range;
     return quantized;
 }
 
@@ -42,6 +43,12 @@ uint32_t trimBits(uint32_t value, uint8_t bits)
     //mask to the bit range
     value = value & max;
     return value;
+}
+
+double_t expandFloat(uint32_t value, double_t min, double_t max, uint8_t bits){
+    uint32_t range = (2 ^ bits) - 1;
+    double_t scaled = map((double_t)value, 0.0, (double_t)range, min, max);
+    return scaled;
 }
 
 #endif

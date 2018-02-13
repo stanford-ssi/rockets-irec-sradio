@@ -130,7 +130,7 @@ void SRADio::RadioOn()
 
 //tryToRX:
 //attempts to process any recived messages
-uint8_t SRADio::tryToRX(uint8_t *message)
+uint8_t SRADio::tryToRX(void *msg_data, uint8_t msg_size)
 {
   uint8_t data[FRAME_SIZE + 32] = {0}; //32 bytes buffer room
   uint8_t data_size = FRAME_SIZE;
@@ -189,7 +189,7 @@ uint8_t SRADio::tryToRX(uint8_t *message)
     {
       Serial.println("No errors");
     }
-    memcpy(message, copied, MAX_MSG_LENGTH);
+    memcpy(msg_data, copied, msg_size);
 
     return (receivedMsg) + (2 * eccUsed) + (4 * eccError) + (8 * frameError);
   }
