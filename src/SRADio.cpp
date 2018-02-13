@@ -49,7 +49,7 @@ void SRADio::configureRF()
 //takes:
 //  -msg_data, a pointer to an array of data to transmit
 //  -msg_size, the size of msg_data
-void SRADio::encode_and_transmit(uint8_t *msg_data, uint8_t msg_size)
+void SRADio::encode_and_transmit(void *msg_data, uint8_t msg_size)
 {
   //message must be withing the frame size constraints
   if (msg_size > MAX_MSG_LENGTH)
@@ -59,10 +59,7 @@ void SRADio::encode_and_transmit(uint8_t *msg_data, uint8_t msg_size)
 
   //add padding zeroes to normalize message length
   uint8_t padded_msg_data[MAX_MSG_LENGTH] = {0};
-  for (int i = 0; i < msg_size; i++)
-  {
-    padded_msg_data[i] = msg_data[i];
-  }
+  memcpy(padded_msg_data, msg_data, msg_size);
 
   //calculate ECC data and package it into a frame
   uint8_t frame_data[FRAME_SIZE] = {0};                     //frame buffer

@@ -6,8 +6,8 @@
 #define PRINT_RSSI
 #define PRINT_DEBUG
 
-#define MAX_MSG_LENGTH 50
-#define NPAR 40
+#define MAX_MSG_LENGTH 12
+#define NPAR 12
 #define FRAME_SIZE ( MAX_MSG_LENGTH + NPAR )
 
 #define GFSK_SDN 6

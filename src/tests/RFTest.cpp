@@ -19,6 +19,7 @@
  -Build packet parser
 */
 
+/*
 #include <Arduino.h>
 #include "SRADio.h"
 #include "hermes.h"
@@ -31,7 +32,7 @@ uint8_t rx_message[MAX_MSG_LENGTH] = {0};
 
 SRADio SRADio1;
 
-int main()
+int NOTmain()
 {
 
   //Hermes skybass_interface(Serial1);
@@ -84,3 +85,4 @@ int main()
     }
   }
 }
+*/

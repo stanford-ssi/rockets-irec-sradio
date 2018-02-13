@@ -13,7 +13,7 @@ class SRADio
 public:
   SRADio();
   void configureRF();
-  void encode_and_transmit(uint8_t *latest_frame, uint8_t frame_size);
+  void encode_and_transmit(void *latest_frame, uint8_t frame_size);
   uint8_t tryToRX(uint8_t *message);
   uint8_t getRSSI();
 
