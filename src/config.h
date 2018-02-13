@@ -36,4 +36,7 @@
 // OOK_Rb5Bw30     // OOK  5   kbps
 // OOK_Rb10Bw40   // OOK  10  kbps
 
+#define WATCHDOG_PIN 15
+#define SKYBASS_SERIAL Serial3
+
 #endif

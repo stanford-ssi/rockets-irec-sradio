@@ -26,17 +26,20 @@
 #include "utils.h"
 
 SRADio SRADio1;
-Hermes Skybass(Serial1);
+Hermes Skybass(SKYBASS_SERIAL);
 skybass_data_t sb_data;
 bool new_sb_data;
 uint32_t watchdog_timer;
 uint32_t last_pkt_num;
+uint32_t pulse_timer;
+bool pulse_state = false;
 radio_packet_t packet;
 
 int main()
 {
+    pinMode(WATCHDOG_PIN, OUTPUT);
     Serial.begin(115200);
-    Serial.println("SRADio Jan 2018");
+    Serial.println("SRADio Feb 2018");
     SRADio1.configureRF();
     delay(1000);
 
@@ -58,6 +61,14 @@ int main()
         {
             last_pkt_num = sb_data.packet_num;
             SRADio1.encode_and_transmit(&packet, sizeof(packet));
+        }
+        if (millis() < (watchdog_timer + 3000))
+        { //if skybass is still alive
+            if (millis() > pulse_timer + 200)
+            { //if its been a while...
+                pulse_state = !pulse_state;
+                digitalWrite(WATCHDOG_PIN, pulse_state);
+            }
         }
     }
 }
