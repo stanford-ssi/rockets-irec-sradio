@@ -89,7 +89,7 @@ void SRADio::encode_and_transmit(void *msg_data, uint8_t msg_size)
 //debug transmission time
 #ifdef PRINT_TIMING
   Serial.print("Sent ");
-  Serial.print(msg_size);
+  Serial.print(FRAME_SIZE);
   Serial.print(" bytes in ");
   Serial.print((micros() - timer) / 1000.);
   Serial.println(" ms");
@@ -187,7 +187,7 @@ uint8_t SRADio::tryToRX(void *msg_data, uint8_t msg_size)
     }
     else
     {
-      Serial.println("No errors");
+      //Serial.println("No errors");
     }
     memcpy(msg_data, copied, msg_size);
 

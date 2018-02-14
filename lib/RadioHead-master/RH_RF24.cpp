@@ -329,10 +329,10 @@ bool RH_RF24::recv(uint8_t* buf, uint8_t* len)
 {
     if (!available())
 	return false;
-	Serial.println("available");
+	//Serial.println("available");
     // CAUTION: first 4 octets of _buf contain the headers
-	Serial.println("bufLen is ");
-	Serial.println(_bufLen);
+	//Serial.println("bufLen is ");
+	//Serial.println(_bufLen);
     if (buf && len && (_bufLen >= 0))
     {
 	ATOMIC_BLOCK_START;

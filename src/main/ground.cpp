@@ -27,6 +27,7 @@ int main()
         root["lon"] = expandFloat(packet.lon, 0.0, 10.0, 18);
         root["gps_lock"] = packet.gps_lock;
         root["strato_lock"] = expandFloat(packet.strato_alt, -2000.0, 40000.0, 15);
+        root["rssi"] = SRADio1.getRSSI();
         
         root.printTo(Serial);
         Serial.println();
