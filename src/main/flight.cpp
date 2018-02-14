@@ -25,28 +25,36 @@
 #include "hermes_irec.h"
 #include "utils.h"
 
-SRADio SRADio1;
-Hermes Skybass(SKYBASS_SERIAL);
-skybass_data_t sb_data;
-bool new_sb_data;
-uint32_t watchdog_timer;
-uint32_t last_pkt_num;
-uint32_t pulse_timer;
-bool pulse_state = false;
-radio_packet_t packet;
+
 
 int main()
 {
     pinMode(WATCHDOG_PIN, OUTPUT);
     Serial.begin(115200);
     Serial.println("SRADio Feb 2018");
+
+    skybass_data_t sb_data;
+    bool new_sb_data;
+    uint32_t watchdog_timer;
+    uint32_t last_pkt_num;
+    uint32_t pulse_timer;
+    bool pulse_state = false;
+    radio_packet_t packet;
+
+    SRADio SRADio1;
+    Hermes Skybass(SKYBASS_SERIAL);
     SRADio1.configureRF();
-    delay(1000);
+
+    delay(3000);
 
     while (true)
     {
-        if (Skybass.receiveSkybassData(sb_data))
+        //if(Skybass.receiveSkybassData(sb_data))
+        if (true)
         {
+            Serial.println("Got Skybass Packet");
+            sb_data.altitude = 4200.69;
+            sb_data.packet_num = 6900;
             watchdog_timer = millis();
             packet.packet_num = trimBits(sb_data.packet_num, 18);
             packet.altitude = compressFloat(sb_data.altitude, -2000.0, 40000.0, 15);
@@ -56,8 +64,10 @@ int main()
             packet.lon = compressFloat(sb_data.longitude, 0.0, 10.0, 18);
             packet.gps_lock = sb_data.gps_locked;
             packet.strato_alt = compressFloat(0, -2000.0, 40000.0, 15); //TODO
+            
         }
-        if (sb_data.packet_num > last_pkt_num)
+        //if (sb_data.packet_num > last_pkt_num)
+        if(true)
         {
             last_pkt_num = sb_data.packet_num;
             SRADio1.encode_and_transmit(&packet, sizeof(packet));
