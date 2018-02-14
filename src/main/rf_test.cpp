@@ -19,7 +19,6 @@
  -Build packet parser
 */
 
-/*
 #include <Arduino.h>
 #include "SRADio.h"
 #include "hermes.h"
@@ -32,7 +31,7 @@ uint8_t rx_message[MAX_MSG_LENGTH] = {0};
 
 SRADio SRADio1;
 
-int NOTmain()
+int main()
 {
 
   //Hermes skybass_interface(Serial1);
@@ -54,7 +53,7 @@ int NOTmain()
   while (true)
   {
 
-    if (SRADio1.tryToRX(rx_message) == 1)
+    if (SRADio1.tryToRX(rx_message,tx_message_length) == 1)
     {
       Serial.print("Got Frame: ");
       Serial.write(rx_message, MAX_MSG_LENGTH);
@@ -85,4 +84,3 @@ int NOTmain()
     }
   }
 }
-*/
