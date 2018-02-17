@@ -35,9 +35,9 @@ int main()
 
     skybass_data_t sb_data;
     bool new_sb_data;
-    uint32_t watchdog_timer;
-    uint32_t last_pkt_num;
-    uint32_t pulse_timer;
+    uint32_t watchdog_timer =0 ;
+    uint32_t pulse_timer = 0;
+    uint32_t tx_timer = 0;
     bool pulse_state = false;
     radio_packet_t packet;
 
@@ -49,13 +49,13 @@ int main()
 
     while (true)
     {
-        //if(Skybass.receiveSkybassData(sb_data))
-        if (true)
+        if(Skybass.receiveSkybassData(sb_data))
         {
+            watchdog_timer = millis();
             Serial.println("Got Skybass Packet");
+
             sb_data.altitude = 4200.69;
             sb_data.packet_num = 6900;
-            watchdog_timer = millis();
             packet.packet_num = trimBits(sb_data.packet_num, 18);
             packet.altitude = compressFloat(sb_data.altitude, -2000.0, 40000.0, 15);
             packet.sb_state = trimBits(sb_data.state, 4);
@@ -66,13 +66,14 @@ int main()
             packet.strato_alt = compressFloat(0, -2000.0, 40000.0, 15); //TODO
             
         }
-        //if (sb_data.packet_num > last_pkt_num)
-        if(true)
-        {
-            last_pkt_num = sb_data.packet_num;
-            SRADio1.encode_and_transmit(&packet, sizeof(packet));
+
+        if(millis() - tx_timer > 50){
+            Serial.println("Sent Radio Packet");
+            tx_timer = millis();
+            SRADio1.encode_and_transmit(&packet, sizeof(packet));//SEND
         }
-        if (millis() < (watchdog_timer + 3000))
+        
+        if (millis() > (watchdog_timer + 3000))
         { //if skybass is still alive
             if (millis() > pulse_timer + 200)
             { //if its been a while...

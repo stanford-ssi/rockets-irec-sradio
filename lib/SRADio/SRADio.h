@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "config.h"
+#include "../../src/config.h"
 #include "RH_RF24.h"
 #include "ecc.h"
 
