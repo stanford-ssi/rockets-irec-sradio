@@ -134,14 +134,11 @@ uint8_t SRADio::tryToRX(void *msg_data, uint8_t msg_size)
 {
   uint8_t data[FRAME_SIZE + 32] = {0}; //32 bytes buffer room
   uint8_t data_size = FRAME_SIZE;
-  bool receivedMsg = false;
-  bool frameError = false;
-  bool eccError = false;
-  bool eccUsed = false;
+  uint8_t returnCode = 0; //bits: recived, ECC used, ECC failed, Frame err
 
   if (rf24->recv(data, &data_size))
   {
-    receivedMsg = true;
+    bitSet(returnCode,0);
     lastRssi = (uint8_t)rf24->lastRssi();
 
 #ifdef PRINT_RSSI
@@ -156,7 +153,7 @@ uint8_t SRADio::tryToRX(void *msg_data, uint8_t msg_size)
       Serial.print(data_size);
       Serial.print(", expecting ");
       Serial.println(FRAME_SIZE);
-      frameError = true;
+      bitSet(returnCode,3);
     }
 #endif
 
@@ -172,28 +169,33 @@ uint8_t SRADio::tryToRX(void *msg_data, uint8_t msg_size)
 
     if (check_syndrome() != 0)
     {
-      eccUsed = true;
+      bitSet(returnCode,1);
       Serial.println("There were errors");
       int correct = correct_errors_erasures(copied, FRAME_SIZE, 0, NULL);
+      
+      errorSyndrome = String();
+      for (int i = 0; i < NPAR; i++)
+        errorSyndrome += synBytes[i];
+        errorSyndrome += ",";
+
       if (correct)
       {
         Serial.println("Corrected successfully.");
+        Serial.println("Sydrome: " + errorSyndrome);
       }
       else
       {
         Serial.println("Uncorrectable Errors!");
-        eccError = true;
+        Serial.println("Sydrome: " + errorSyndrome);
+        bitSet(returnCode,2);
       }
     }
-    else
-    {
-      //Serial.println("No errors");
-    }
+
     memcpy(msg_data, copied, msg_size);
 
-    return (receivedMsg) + (2 * eccUsed) + (4 * eccError) + (8 * frameError);
+    return returnCode;
   }
-  return 0;
+  return returnCode;
 }
 
 //getRSSI:
@@ -201,4 +203,8 @@ uint8_t SRADio::tryToRX(void *msg_data, uint8_t msg_size)
 uint8_t SRADio::getRSSI()
 {
   return lastRssi;
+}
+
+String SRADio::getSyndrome(){
+  return errorSyndrome;
 }
