@@ -31,7 +31,7 @@ int main()
 {
     pinMode(WATCHDOG_PIN, OUTPUT);
     Serial.begin(115200);
-    Serial.println("SRADio Feb 2018");
+    Serial.println("SRADio Apr 2018");
 
     skybass_data_t sb_data;
     bool new_sb_data;
@@ -45,17 +45,23 @@ int main()
     Hermes Skybass(SKYBASS_SERIAL);
     SRADio1.configureRF();
 
-    delay(3000);
+    Serial.println("1");
+    delay(5000);
+    Serial.println(sb_data.getSize());
 
     while (true)
     {
+        Serial.print(".");
         if(Skybass.receiveSkybassData(sb_data))
         {
             watchdog_timer = millis();
             Serial.println("Got Skybass Packet");
 
-            sb_data.altitude = 4200.69;
-            sb_data.packet_num = 6900;
+            uint8_t voltage_1 = analogRead(VS1)/8;
+            uint8_t voltage_2 = analogRead(VS2)/8;
+            packet.vsense1 = trimBits(voltage_1, 4);
+            packet.vsense2 = trimBits(voltage_2, 4);
+
             packet.packet_num = trimBits(sb_data.packet_num, 18);
             packet.altitude = compressFloat(sb_data.altitude, -2000.0, 40000.0, 15);
             packet.sb_state = trimBits(sb_data.state, 4);
@@ -81,5 +87,6 @@ int main()
                 digitalWrite(WATCHDOG_PIN, pulse_state);
             }
         }
+
     }
 }

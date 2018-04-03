@@ -7,7 +7,7 @@
 
 typedef struct __attribute__((__packed__)) hermes_data_t
 {
-  virtual size_t getSize();
+  virtual uint8_t getSize();
 } hermes_data_t;
 
 typedef uint8_t packet_type_t;

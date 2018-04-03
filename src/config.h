@@ -37,6 +37,9 @@
 // OOK_Rb10Bw40   // OOK  10  kbps
 
 #define WATCHDOG_PIN 15
-#define SKYBASS_SERIAL Serial3
+#define VS1 A4
+#define VS2 A5
+#define SKYBASS_SERIAL Serial1
+#define STRATO_SERIAL Serial2
 
 #endif

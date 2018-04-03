@@ -26,6 +26,8 @@ int main()
         root["lon"] = expandFloat(packet.lon, 0.0, 10.0, 18);
         root["gps_lock"] = packet.gps_lock;
         root["strato_alt"] = expandFloat(packet.strato_alt, -2000.0, 40000.0, 15);
+        root["vsense1"] = packet.vsense1;
+        root["vsense2"] = packet.vsense2;
         root["rssi"] = SRADio1.getRSSI();
         root["rx_code"] = rx;
         if(bitRead(rx,1)){

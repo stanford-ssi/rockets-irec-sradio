@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 typedef struct __attribute__((__packed__)) radio_packet_t
-{ //should be 12 bytes
+{ //should be 13 bytes
     unsigned packet_num : 18;
     unsigned altitude : 15;
     unsigned sb_state : 4;
@@ -14,6 +14,8 @@ typedef struct __attribute__((__packed__)) radio_packet_t
     unsigned gps_lock : 1;
     unsigned strato_alt : 15;
     unsigned padding : 3;
+    unsigned vsense1 : 4;
+    unsigned vsense2 : 4;
 } radio_packet_t;
 
 uint32_t compressFloat(double_t value, double_t min, double_t max, uint8_t bits)
