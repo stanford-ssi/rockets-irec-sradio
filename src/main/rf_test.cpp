@@ -33,7 +33,7 @@ SRADio SRADio1;
 
 int main()
 {
-
+  delay(3000);
   //Hermes skybass_interface(Serial1);
 
   //skybass_data_t data;
@@ -52,7 +52,7 @@ int main()
 
   while (true)
   {
-
+/*
     if (SRADio1.tryToRX(rx_message,tx_message_length) == 1)
     {
       Serial.print("Got Frame: ");
@@ -72,7 +72,7 @@ int main()
       }
       Serial.println();
     }
-
+*/
     if (millis() > sendRadioTimer)
     {
       //generate some data paterns!
@@ -81,6 +81,7 @@ int main()
 
       SRADio1.encode_and_transmit(tx_message, tx_message_length);
       sendRadioTimer = millis() + 1000;
+      Serial.println("sent");
     }
   }
 }
