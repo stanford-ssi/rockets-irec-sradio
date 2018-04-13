@@ -21,15 +21,16 @@ int main()
         root["packet_num"] = packet.packet_num;
         root["altitude"] = expandFloat(packet.altitude, -2000.0, 40000.0, 15);
         root["sb_state"] = packet.sb_state;
-        root["battery"] = expandFloat(packet.battery, 3.0, 4.0, 4);
+        root["battery"] = expandFloat(packet.battery, 3.0, 4.0, 8);
         root["lat"] = expandFloat(packet.lat, 0.0, 10.0, 18);
         root["lon"] = expandFloat(packet.lon, 0.0, 10.0, 18);
         root["gps_lock"] = packet.gps_lock;
         root["strato_alt"] = expandFloat(packet.strato_alt, -2000.0, 40000.0, 15);
-        root["vsense1"] = packet.vsense1;
-        root["vsense2"] = packet.vsense2;
+        root["vsense1"] = unpackBits(packet.vsense1,8,0.0,9.9);
+        root["vsense2"] = unpackBits(packet.vsense2,8,0.0,9.9);
         root["rssi"] = SRADio1.getRSSI();
         root["rx_code"] = rx;
+        
         if(bitRead(rx,1)){
             root["syndrome"] = SRADio1.getSyndrome();
         }

@@ -56,22 +56,21 @@ int main()
         {
             watchdog_timer = millis();
             Serial.println("Got Skybass Packet");
-
-            uint8_t voltage_1 = analogRead(VS1)/8;
-            uint8_t voltage_2 = analogRead(VS2)/8;
-            packet.vsense1 = trimBits(voltage_1, 4);
-            packet.vsense2 = trimBits(voltage_2, 4);
-
             packet.packet_num = trimBits(sb_data.packet_num, 18);
             packet.altitude = compressFloat(sb_data.altitude, -2000.0, 40000.0, 15);
             packet.sb_state = trimBits(sb_data.state, 4);
-            packet.battery = compressFloat(sb_data.batt_voltage, 3.0, 4.0, 4);
+            packet.battery = compressFloat(sb_data.batt_voltage, 3.0, 4.0, 8);
             packet.lat = compressFloat(sb_data.latitude, 0.0, 10.0, 18);
             packet.lon = compressFloat(sb_data.longitude, 0.0, 10.0, 18);
             packet.gps_lock = sb_data.gps_locked;
-            packet.strato_alt = compressFloat(0, -2000.0, 40000.0, 15); //TODO
             
         }
+
+            uint32_t voltage_1 = analogRead(VS1);
+            uint32_t voltage_2 = analogRead(VS2);
+            packet.vsense1 = fitToBits(voltage_1,8,0,1023);
+            packet.vsense2 = fitToBits(voltage_2,8,0,1023);
+            packet.strato_alt = compressFloat(0, -2000.0, 40000.0, 15); //TODO
 
         if(millis() - tx_timer > 50){
             Serial.println("Sent Radio Packet");
