@@ -10,34 +10,11 @@
 //ask @timv if you have questions.
 //This should eventually be rolled into a min C++ arduino implementation.
 
-void min_tx_byte(uint8_t port, uint8_t byte)
-{
-    switch (port)
-    {
-    case 0:
-        Serial1.write(&byte, 1U);
-        break;
-        //case 1:
-        //break;
-    }
-}
+
 
 uint32_t min_time_ms(void)
 {
     return millis();
-}
-
-uint16_t min_tx_space(uint8_t port)
-{
-  switch (port)
-    {
-    case 0:
-        return Serial1.availableForWrite();
-        break;
-    //case 1:
-        //break;
-    }
-    return 0;
 }
 
 void min_tx_start(uint8_t port){

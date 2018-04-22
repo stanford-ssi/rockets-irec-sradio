@@ -73,7 +73,7 @@ int main()
     Serial.begin(115200);
     Serial.println("SRADio Apr 2018");
 
-    min_init_context(&min_ctx, 0);
+    min_init_context(&min_ctx, 1);
 
     uint32_t tx_timer = 0;
 
@@ -139,4 +139,25 @@ int main()
 
         beacon.check();
     }
+}
+
+void min_tx_byte(uint8_t port, uint8_t byte)
+{
+    switch (port)
+    {
+    case 1:
+        Serial1.write(&byte, 1U);
+        break;
+    }
+}
+
+uint16_t min_tx_space(uint8_t port)
+{
+  switch (port)
+    {
+    case 1:
+        return Serial1.availableForWrite();
+        break;
+    }
+    return 0;
 }
