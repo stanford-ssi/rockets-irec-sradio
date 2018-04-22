@@ -21,11 +21,51 @@
 
 #include <Arduino.h>
 #include "SRADio.h"
-#include "hermes.h"
-#include "hermes_irec.h"
+#include "min-irec.h"
+#include "min_support.h"
 #include "utils.h"
+#include "irec-rf.h"
+#include "deadman.cpp"
+
+#include "min.h"
+#include "min.c"
 
 
+struct min_context min_ctx;
+esp_status_t esp_status;
+skyb_data_t sb_data;
+bool new_esp_status = false;
+bool new_sb_data = false;
+
+void min_application_handler(uint8_t min_id, uint8_t *min_payload, uint8_t len_payload, uint8_t port)
+{
+    switch (min_id)
+    {
+    case SKYB_DATA:
+        if (len_payload == sizeof(skyb_data_t))
+        {
+            memcpy(&sb_data, min_payload, len_payload);
+            new_sb_data = true;
+        }
+        else
+        {
+            Serial.printf("Size Err: %i/%i", len_payload, sizeof(skyb_data_t));
+        }
+        break;
+
+    case ESP_STATUS:
+        if (len_payload == sizeof(esp_status_t))
+        {
+            memcpy(&esp_status, min_payload, len_payload);
+            new_esp_status = true;
+        }
+        else
+        {
+            Serial.printf("Size Err: %i/%i", len_payload, sizeof(esp_status_t));
+        }
+        break;
+    }
+}
 
 int main()
 {
@@ -33,29 +73,38 @@ int main()
     Serial.begin(115200);
     Serial.println("SRADio Apr 2018");
 
-    skybass_data_t sb_data;
-    bool new_sb_data;
-    uint32_t watchdog_timer =0 ;
-    uint32_t pulse_timer = 0;
+    min_init_context(&min_ctx, 0);
+
     uint32_t tx_timer = 0;
-    bool pulse_state = false;
+
     radio_packet_t packet;
 
     SRADio SRADio1;
-    Hermes Skybass(SKYBASS_SERIAL);
+    DeadMan beacon(WATCHDOG_PIN,3000L);
     SRADio1.configureRF();
 
     Serial.println("1");
-    delay(5000);
-    Serial.println(sb_data.getSize());
+    delay(3000);
 
     while (true)
     {
         Serial.print(".");
-        if(Skybass.receiveSkybassData(sb_data))
+
+        //MIN Serial polling code
+        char buf[32];
+        size_t buf_len;
+        if(Serial1.available() > 0) {
+            buf_len = Serial1.readBytes(buf, 32U);
+        }else {
+            buf_len = 0;
+        }
+        min_poll(&min_ctx, (uint8_t *)buf, (uint8_t)buf_len);
+        
+
+        //compress downlink data from skybass
+        if (new_sb_data)
         {
-            watchdog_timer = millis();
-            Serial.println("Got Skybass Packet");
+            beacon.pet();
             packet.packet_num = trimBits(sb_data.packet_num, 18);
             packet.altitude = compressFloat(sb_data.altitude, -2000.0, 40000.0, 15);
             packet.sb_state = trimBits(sb_data.state, 4);
@@ -63,29 +112,31 @@ int main()
             packet.lat = compressFloat(sb_data.latitude, 0.0, 10.0, 18);
             packet.lon = compressFloat(sb_data.longitude, 0.0, 10.0, 18);
             packet.gps_lock = sb_data.gps_locked;
-            
+            new_sb_data = false;
         }
 
-            uint32_t voltage_1 = analogRead(VS1);
-            uint32_t voltage_2 = analogRead(VS2);
-            packet.vsense1 = fitToBits(voltage_1,8,0,1023);
-            packet.vsense2 = fitToBits(voltage_2,8,0,1023);
-            packet.strato_alt = compressFloat(0, -2000.0, 40000.0, 15); //TODO
+        //compress downlink data from ESPs
+        if (new_esp_status){
+            packet.skybass_alive = esp_status.skybass_alive;
+            packet.skybass_armed = esp_status.skybass_armed;
+        }
 
-        if(millis() - tx_timer > 50){
+        //compress downlink data from voltage sense
+        uint32_t voltage_1 = analogRead(VS1);
+        uint32_t voltage_2 = analogRead(VS2);
+        packet.vsense1 = fitToBits(voltage_1, 8, 0, 1023);
+        packet.vsense2 = fitToBits(voltage_2, 8, 0, 1023);
+        packet.strato_alt = compressFloat(0, -2000.0, 40000.0, 15); //TODO
+
+        //send telemetry packet
+        if (millis() - tx_timer > 50)
+        {
             Serial.println("Sent Radio Packet");
             tx_timer = millis();
-            SRADio1.encode_and_transmit(&packet, sizeof(packet));//SEND
-        }
-        
-        if (millis() > (watchdog_timer + 3000))
-        { //if skybass is still alive
-            if (millis() > pulse_timer + 200)
-            { //if its been a while...
-                pulse_state = !pulse_state;
-                digitalWrite(WATCHDOG_PIN, pulse_state);
-            }
+            SRADio1.encode_and_transmit(&packet, sizeof(packet)); //SEND
         }
 
+
+        beacon.check();
     }
 }

@@ -9,21 +9,6 @@ double_t map_float(double_t x, double_t in_min, double_t in_max, double_t out_mi
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-typedef struct __attribute__((__packed__)) radio_packet_t
-{ //should be 15 bytes
-    unsigned packet_num : 18;
-    unsigned altitude : 15;
-    unsigned sb_state : 4;
-    unsigned battery : 8;
-    unsigned lat : 18;
-    unsigned lon : 18;
-    unsigned gps_lock : 1;
-    unsigned strato_alt : 15;
-    unsigned padding : 3;
-    unsigned vsense1 : 8;
-    unsigned vsense2 : 8;
-} radio_packet_t;
-
 uint32_t compressFloat(double_t value, double_t min, double_t max, uint8_t bits)
 {   
     uint32_t range = pow(2,bits) - 1;
