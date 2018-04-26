@@ -21,8 +21,6 @@
 
 #include <Arduino.h>
 #include "SRADio.h"
-#include "hermes.h"
-#include "hermes_irec.h"
 
 uint8_t tx_message_length = MAX_MSG_LENGTH;
 uint8_t tx_message[MAX_MSG_LENGTH] = {0};

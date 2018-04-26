@@ -36,6 +36,8 @@ esp_status_t esp_status;
 skyb_data_t sb_data;
 bool new_esp_status = false;
 bool new_sb_data = false;
+rf_down_t down_packet;
+rf_up_t up_packet;
 
 void min_application_handler(uint8_t min_id, uint8_t *min_payload, uint8_t len_payload, uint8_t port)
 {
@@ -77,7 +79,7 @@ int main()
 
     uint32_t tx_timer = 0;
 
-    radio_packet_t packet;
+    
 
     SRADio SRADio1;
     DeadMan beacon(WATCHDOG_PIN,3000L);
@@ -105,37 +107,72 @@ int main()
         if (new_sb_data)
         {
             beacon.pet();
-            packet.packet_num = trimBits(sb_data.packet_num, 18);
-            packet.altitude = compressFloat(sb_data.altitude, -2000.0, 40000.0, 15);
-            packet.sb_state = trimBits(sb_data.state, 4);
-            packet.battery = compressFloat(sb_data.batt_voltage, 3.0, 4.0, 8);
-            packet.lat = compressFloat(sb_data.latitude, 0.0, 10.0, 18);
-            packet.lon = compressFloat(sb_data.longitude, 0.0, 10.0, 18);
-            packet.gps_lock = sb_data.gps_locked;
+            down_packet.packet_num = trimBits(sb_data.packet_num, 18);
+            down_packet.altitude = compressFloat(sb_data.altitude, -2000.0, 40000.0, 15);
+            down_packet.sb_state = trimBits(sb_data.state, 4);
+            down_packet.battery = compressFloat(sb_data.batt_voltage, 3.0, 4.0, 8);
+            down_packet.lat = compressFloat(sb_data.latitude, 0.0, 10.0, 18);
+            down_packet.lon = compressFloat(sb_data.longitude, 0.0, 10.0, 18);
+            down_packet.gps_lock = sb_data.gps_locked;
             new_sb_data = false;
         }
 
         //compress downlink data from ESPs
         if (new_esp_status){
-            packet.skybass_alive = esp_status.skybass_alive;
-            packet.skybass_armed = esp_status.skybass_armed;
+            down_packet.skybass_alive = esp_status.skybass_alive;
+            down_packet.skybass_armed = esp_status.skybass_armed;
+            down_packet.payload_armed = esp_status.payload_armed;
+
         }
 
         //compress downlink data from voltage sense
         uint32_t voltage_1 = analogRead(VS1);
         uint32_t voltage_2 = analogRead(VS2);
-        packet.vsense1 = fitToBits(voltage_1, 8, 0, 1023);
-        packet.vsense2 = fitToBits(voltage_2, 8, 0, 1023);
-        packet.strato_alt = compressFloat(0, -2000.0, 40000.0, 15); //TODO
+        down_packet.vsense1 = fitToBits(voltage_1, 8, 0, 1023);
+        down_packet.vsense2 = fitToBits(voltage_2, 8, 0, 1023);
+        down_packet.strato_alt = compressFloat(0, -2000.0, 40000.0, 15); //TODO
 
         //send telemetry packet
         if (millis() - tx_timer > 50)
         {
             Serial.println("Sent Radio Packet");
             tx_timer = millis();
-            SRADio1.encode_and_transmit(&packet, sizeof(packet)); //SEND
+            SRADio1.encode_and_transmit(&down_packet, sizeof(down_packet)); //SEND
         }
 
+        //check for uplink data
+        uint8_t rx = SRADio1.tryToRX(&up_packet, sizeof(up_packet));
+        if(rx == 1 || rx == 3){
+
+            //send things to skybass
+            skyb_cmd_t skyb_cmd_packet;
+            skyb_cmd_packet.ematch1 = 0;
+            skyb_cmd_packet.ematch2 = 0;
+            skyb_cmd_packet.ematch3 = 0;
+            skyb_cmd_packet.ematch4 = 0;
+            skyb_cmd_packet.reset = 0;
+            if(up_packet.charge1 && up_packet.charge1_parity){
+                skyb_cmd_packet.ematch1 = 1;
+            }
+            if(up_packet.charge2 && up_packet.charge2_parity){
+                skyb_cmd_packet.ematch2 = 1;
+            }
+            if(up_packet.charge3 && up_packet.charge3_parity){
+                skyb_cmd_packet.ematch3 = 1;
+            }
+            if(up_packet.charge4 && up_packet.charge4_parity){
+                skyb_cmd_packet.ematch4 = 1;
+            }
+            min_send_frame(&min_ctx, SKYB_CMD, (uint8_t*)&skyb_cmd_packet, sizeof(skyb_cmd_packet));
+
+            //then send things to ESPs
+            esp_arm_t esp_arm_packet;
+            esp_arm_packet.arm_payload = up_packet.arm_payload;
+            esp_arm_packet.arm_skybass = 1;
+            esp_arm_packet.arm_strato = 1;
+            min_send_frame(&min_ctx, ESP_ARM, (uint8_t*)&esp_arm_packet, sizeof(esp_arm_packet));
+
+        }
 
         beacon.check();
     }

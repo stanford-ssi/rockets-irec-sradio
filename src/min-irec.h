@@ -26,13 +26,13 @@ typedef struct __attribute__((__packed__)) esp_stage_t
 
 typedef struct __attribute__((__packed__)) esp_status_t
 {
-  bool payload_alive;
-  bool staging_alive;
-  bool cots_alive;
-  bool skybass_alive;
-  bool payload_armed;
-  bool cots_armed;
-  bool skybass_armed;
+  bool payload_alive; //if payload ESP is alive
+  bool staging_alive; //if staging ESP is alive
+  bool cots_alive;    //if COTS ESP is alive
+  bool skybass_alive; // if the skybass ESP is alive
+  bool payload_armed; // if the payload is armed
+  bool cots_armed;    //if COTS is armed
+  bool skybass_armed; //if the skybass is armed
   bool staging_activated;
   bool light_sensor;
 } esp_status_t;
