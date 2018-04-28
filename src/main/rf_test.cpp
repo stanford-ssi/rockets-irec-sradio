@@ -31,7 +31,7 @@ SRADio SRADio1;
 
 int main()
 {
-  delay(3000);
+  delay(5000);
   //Hermes skybass_interface(Serial1);
 
   //skybass_data_t data;
@@ -43,7 +43,7 @@ int main()
 
   SRADio1.configureRF();
 
-  delay(3000);
+  delay(5000);
 
   uint32_t sendRadioTimer = millis() + 1000;
   int i = 0;
