@@ -14,6 +14,7 @@ typedef struct __attribute__((__packed__)) rf_down_t
     unsigned skybass_alive : 1; //data from ESPs
     unsigned skybass_armed : 1;
     unsigned payload_armed : 1;
+    unsigned charges_blown : 1; //feedback from skybass
 } rf_down_t;
 
 typedef struct __attribute__((__packed__)) rf_up_t
@@ -27,5 +28,4 @@ typedef struct __attribute__((__packed__)) rf_up_t
     unsigned charge2_parity : 1;
     unsigned charge3_parity : 1;
     unsigned charge4_parity : 1;
-    unsigned zeroes : 111;
 } rf_up_t;

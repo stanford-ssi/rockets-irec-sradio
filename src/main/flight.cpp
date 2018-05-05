@@ -72,7 +72,8 @@ void min_application_handler(uint8_t min_id, uint8_t *min_payload, uint8_t len_p
 int main()
 {
     pinMode(WATCHDOG_PIN, OUTPUT);
-    Serial.begin(115200);
+    Serial.begin(115200);//USB Debug
+    Serial1.begin(115200);//Serial to Skybass
     Serial.println("SRADio Apr 2018");
 
     min_init_context(&min_ctx, 1);
@@ -89,9 +90,7 @@ int main()
     delay(3000);
 
     while (true)
-    {
-        Serial.print(".");
-
+     {
         //MIN Serial polling code
         char buf[32];
         size_t buf_len;
@@ -133,7 +132,7 @@ int main()
         down_packet.strato_alt = compressFloat(0, -2000.0, 40000.0, 15); //TODO
 
         //send telemetry packet
-        if (millis() - tx_timer > 50)
+        if (millis() - tx_timer > 1000)
         {
             Serial.println("Sent Radio Packet");
             tx_timer = millis();
@@ -143,7 +142,7 @@ int main()
         //check for uplink data
         uint8_t rx = SRADio1.tryToRX(&up_packet, sizeof(up_packet));
         if(rx == 1 || rx == 3){
-
+        Serial.println(rx);
             //send things to skybass
             skyb_cmd_t skyb_cmd_packet;
             skyb_cmd_packet.ematch1 = 0;
@@ -163,11 +162,13 @@ int main()
             if(up_packet.charge4 && up_packet.charge4_parity){
                 skyb_cmd_packet.ematch4 = 1;
             }
+
             min_send_frame(&min_ctx, SKYB_CMD, (uint8_t*)&skyb_cmd_packet, sizeof(skyb_cmd_packet));
 
             //then send things to ESPs
             esp_arm_t esp_arm_packet;
             esp_arm_packet.arm_payload = up_packet.arm_payload;
+            Serial.printf("Payload: %i\n",esp_arm_packet.arm_payload);
             esp_arm_packet.arm_skybass = 1;
             esp_arm_packet.arm_strato = 1;
             min_send_frame(&min_ctx, ESP_ARM, (uint8_t*)&esp_arm_packet, sizeof(esp_arm_packet));

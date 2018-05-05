@@ -45,6 +45,7 @@ int main()
             root["payload_armed"] = down_pkt.payload_armed;
             root["skybass_alive"] = down_pkt.skybass_alive;
             root["skybass_armed"] = down_pkt.skybass_armed;
+            root["charges_blown"] = down_pkt.charges_blown;
             root["boom_cmd"] = boom;
             root["payload_cmd"] = payload;
 
@@ -82,6 +83,12 @@ int main()
                 Serial.println("time to arm payload");
                 up_pkt.arm_payload = 1;
                 payload = true;
+            }
+            if (word.indexOf("DISARM") != -1)
+            {
+                Serial.println("Disarm Payload");
+                up_pkt.arm_payload = 0;
+                payload = false;
             }
             SRADio1.encode_and_transmit(&up_pkt, sizeof(up_pkt));
         }
