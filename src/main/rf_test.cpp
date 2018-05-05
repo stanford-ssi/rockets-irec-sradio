@@ -31,7 +31,7 @@ SRADio SRADio1;
 
 int main()
 {
-  delay(5000);
+  
   //Hermes skybass_interface(Serial1);
 
   //skybass_data_t data;
@@ -39,11 +39,20 @@ int main()
   //skybass_interface.send(data);
 
   Serial.begin(115200);
+  
+  for(int i=0;i<50;i++){
+    delay(100);
+    Serial.printf("delay%i\r\n",i);
+  }
   Serial.println("SRADio Jan 2018");
+  
 
   SRADio1.configureRF();
 
-  delay(5000);
+  for(int i=50;i<100;i++){
+    delay(100);
+    Serial.printf("delay%i\r\n",i);
+  }
 
   uint32_t sendRadioTimer = millis() + 1000;
   int i = 0;
@@ -73,6 +82,7 @@ int main()
 */
     if (millis() > sendRadioTimer)
     {
+      Serial.println("tryin");
       //generate some data paterns!
       i = (i + 1) % MAX_MSG_LENGTH;
       tx_message[i]++;
@@ -81,5 +91,7 @@ int main()
       sendRadioTimer = millis() + 1000;
       Serial.println("sent");
     }
+    Serial.println("loop");
+    delay(100);
   }
 }
