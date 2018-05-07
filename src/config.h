@@ -5,6 +5,7 @@
 //#define PRINT_TIMING
 //#define PRINT_RSSI
 //#define PRINT_DEBUG
+#define DEBUG_MIN
 
 #define MAX_MSG_LENGTH 15
 #define NPAR 15

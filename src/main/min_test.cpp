@@ -5,6 +5,7 @@
 #include "min.c"
 #include "min-irec.h"
 #include "min_support.h"
+//#define DEBUG_MIN
 
 skyb_data_t skyb_data;
 skyb_cmd_t skyb_cmd;
@@ -19,7 +20,7 @@ void min_application_handler(uint8_t min_id, uint8_t *min_payload, uint8_t len_p
     switch (min_id)
     {
     case SKYB_CMD:
-        Serial.println("Got SKYB_CMD");
+        //Serial.println("Got SKYB_CMD");
         if (len_payload == sizeof(skyb_cmd_t))
         {
             memcpy(&skyb_cmd, min_payload, len_payload);
@@ -31,16 +32,16 @@ void min_application_handler(uint8_t min_id, uint8_t *min_payload, uint8_t len_p
         }
         break;
     case ESP_STATUS:
-    Serial.println("Got ESP_STATUS");
+        //Serial.println("Got ESP_STATUS");
         min_send_frame(&min_ctx_sradio, min_id, min_payload, len_payload); //forward packet
         break;
     case ESP_ARM:
-    Serial.println("Got ESP_ARM");
+        //Serial.println("Got ESP_ARM");
         min_send_frame(&min_ctx_esp, min_id, min_payload, len_payload); //forward packet
         break;
 
-   case ESP_STAGE:
-    Serial.println("Got ESP_STAGE");
+    case ESP_STAGE:
+        //Serial.println("Got ESP_STAGE");
         min_send_frame(&min_ctx_esp, min_id, min_payload, len_payload); //forward packet
         break;
     }
@@ -48,13 +49,13 @@ void min_application_handler(uint8_t min_id, uint8_t *min_payload, uint8_t len_p
 
 int main()
 {
-    Serial.begin(115200);//USB Debug
-    Serial2.begin(115200);//Serial to ESP
-    Serial3.begin(115200);//Serial to Sradio
+    Serial.begin(115200);  //USB Debug
+    Serial2.begin(115200); //Serial to ESP
+    Serial3.begin(115200); //Serial to Sradio
     skyb_data.latitude = 420.69;
     uint32_t timer = millis();
 
-    min_init_context(&min_ctx_esp, 1); //Context 1, Serial2
+    min_init_context(&min_ctx_esp, 1);    //Context 1, Serial2
     min_init_context(&min_ctx_sradio, 2); //Context2, Serial3
 
     while (true)
@@ -65,6 +66,13 @@ int main()
         if (Serial3.available() > 0)
         {
             buf_len = Serial3.readBytes(buf, 32U);
+#ifdef DEBUG_MIN
+            for (int i = 0; i < 32; i++)
+            {
+                Serial.printf("Sent: 0x%04x\n", buf[i]);
+            }
+            Serial.println();
+#endif
         }
         else
         {
@@ -82,12 +90,10 @@ int main()
         }
         min_poll(&min_ctx_esp, (uint8_t *)buf, (uint8_t)buf_len);
 
-
-
         if (millis() - timer > 2000)
         {
             timer = millis();
-            min_send_frame(&min_ctx_sradio, SKYB_DATA, (uint8_t*)&skyb_data, sizeof(skyb_data));
+            min_send_frame(&min_ctx_sradio, SKYB_DATA, (uint8_t *)&skyb_data, sizeof(skyb_data));
         }
     }
 }
@@ -131,7 +137,7 @@ void min_tx_byte(uint8_t port, uint8_t byte)
 
 uint16_t min_tx_space(uint8_t port)
 {
-  switch (port)
+    switch (port)
     {
     case 1:
         return Serial2.availableForWrite();

@@ -78,15 +78,15 @@ int main()
                 boom = true;
             }
 
-            if (word.indexOf("PAYLOAD") != -1)
+            if (word.indexOf("ARM") != -1)
             {
-                Serial.println("time to arm payload");
+                Serial.println("Arming Payload");
                 up_pkt.arm_payload = 1;
                 payload = true;
             }
-            if (word.indexOf("DISARM") != -1)
+            if (word.indexOf("DIS") != -1)
             {
-                Serial.println("Disarm Payload");
+                Serial.println("Disarming Payload");
                 up_pkt.arm_payload = 0;
                 payload = false;
             }

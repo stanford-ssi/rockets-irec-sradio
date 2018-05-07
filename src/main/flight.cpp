@@ -71,7 +71,6 @@ void min_application_handler(uint8_t min_id, uint8_t *min_payload, uint8_t len_p
 
 int main()
 {
-    pinMode(WATCHDOG_PIN, OUTPUT);
     Serial.begin(115200);//USB Debug
     Serial1.begin(115200);//Serial to Skybass
     Serial.println("SRADio Apr 2018");
@@ -80,13 +79,12 @@ int main()
 
     uint32_t tx_timer = 0;
 
-    
-
     SRADio SRADio1;
-    DeadMan beacon(WATCHDOG_PIN,3000L);
     SRADio1.configureRF();
 
-    Serial.println("1");
+    pinMode(WATCHDOG_PIN, OUTPUT);
+    DeadMan beacon(WATCHDOG_PIN,3000L);
+
     delay(3000);
 
     while (true)
@@ -185,6 +183,9 @@ void min_tx_byte(uint8_t port, uint8_t byte)
     {
     case 1:
         Serial1.write(&byte, 1U);
+        #ifdef DEBUG_MIN
+        Serial.printf("Sent: 0x%04x\n",byte);
+        #endif
         break;
     }
 }
