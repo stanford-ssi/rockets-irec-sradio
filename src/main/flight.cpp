@@ -73,6 +73,7 @@ int main()
 {
     Serial.begin(115200);//USB Debug
     Serial1.begin(115200);//Serial to Skybass
+    Serial2.begin(9600);
     Serial.println("SRADio Apr 2018");
 
     min_init_context(&min_ctx, 1);
@@ -127,10 +128,16 @@ int main()
         uint32_t voltage_2 = analogRead(VS2);
         down_packet.vsense1 = fitToBits(voltage_1, 8, 0, 1023);
         down_packet.vsense2 = fitToBits(voltage_2, 8, 0, 1023);
-        down_packet.strato_alt = compressFloat(0, -2000.0, 40000.0, 15); //TODO
+
+
+        //listen and compress strato data
+        if (Serial2.available()) {
+            String inStr = Serial2.readStringUntil('\n');
+            down_packet.strato_alt = compressFloat(inStr.toInt(), -2000.0, 40000.0, 15); //TODO
+        }
 
         //send telemetry packet
-        if (millis() - tx_timer > 1000)
+        if (millis() - tx_timer > 200)
         {
             Serial.println("Sent Radio Packet");
             tx_timer = millis();
